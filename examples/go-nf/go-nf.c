@@ -42,9 +42,12 @@ main(int argc, char *argv[]) {
                         rte_exit(EXIT_FAILURE, "Failed ONVM init\n");
                 }
         }
+        Init(nf_local_ctx);
+
         onvm_nflib_run(nf_local_ctx);
 
         onvm_nflib_stop(nf_local_ctx);
+        Done();
         printf("If we reach here, program is ending\n");
         return 0;
 }
