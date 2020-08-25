@@ -65,3 +65,7 @@ CFLAGS_main.o += -Wno-return-type
 endif
 
 include $(RTE_SDK)/mk/rte.extapp.mk
+
+
+build-go:
+	go build -o go-nf.so -buildmode=c-archive go-nf.go

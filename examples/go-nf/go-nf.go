@@ -4,9 +4,15 @@ package main
 // #include <rte_lcore.h>
 // #include <rte_common.h>
 // #include <rte_ip.h>
+// #include <rte_udp.h>
 // #include <rte_mbuf.h>
 // #include <onvm_nflib.h>
 // #include <onvm_pkt_helper.h>
+// static inline struct udp_hdr*
+// get_pkt_udp_hdr(struct rte_mbuf* pkt) {
+//   uint8_t* pkt_data = rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr);
+//   return (struct udp_hdr*)pkt_data;
+// }
 import "C"
 import (
 	"fmt"
@@ -14,8 +20,8 @@ import (
 )
 
 var done = make(chan bool, 1)
-var receiveA = make(chan bool, 1)
-var receiveB = make(chan bool, 1)
+var pfcpHandler = make(chan * C.struct_rte_mbuf, 1)
+var httpHandler = make(chan * C.struct_rte_mbuf, 1)
 
 var i int
 
@@ -25,10 +31,14 @@ func Handler(pkt * C.struct_rte_mbuf, meta * C.struct_onvm_pkt_meta,
     i++
     fmt.Println("packet received!")
     meta.action = C.ONVM_NF_ACTION_DROP
-    if i % 2 == 0 {
-        receiveA <- true
+
+    // udp_hdr := C.onvm_pkt_udp_hdr(pk)
+    udp_hdr := C.get_pkt_udp_hdr(pkt);
+
+    if udp_hdr.dst_port == 2125 {
+        pfcpHandler <- pkt
     } else {
-        receiveB <- true
+        httpHandler <- pkt
     }
     return 0;
 }
@@ -36,7 +46,22 @@ func Handler(pkt * C.struct_rte_mbuf, meta * C.struct_onvm_pkt_meta,
 var pktmbuf_pool * C.struct_rte_mempool
 var nf_local_ctx  * C.struct_onvm_nf_local_ctx
 
-func thread(name string, receive chan bool) {
+func pfcp_thread(name string, receive chan * C.struct_rte_mbuf) {
+    ticker := time.NewTicker(5000 * time.Millisecond)
+    for {
+        select {
+        case <-receive:
+            fmt.Println(name, " Received a packet")
+            send_packet()
+        case <-done:
+            fmt.Println(name, "Done")
+            return
+        case t := <-ticker.C:
+            fmt.Println(name, "Tick at", t)
+        }
+    }
+}
+func http_thread(name string, receive chan  * C.struct_rte_mbuf) {
     ticker := time.NewTicker(5000 * time.Millisecond)
     for {
         select {
@@ -77,8 +102,8 @@ func Init(local_nf_ctx * C.struct_onvm_nf_local_ctx) int {
         return -1
     }
 
-    go thread("A", receiveA)
-    go thread("B", receiveB)
+    go pfcp_thread("PFCP is running", pfcpHandler)
+    go http_thread("HTTP is running", httpHandler)
 
 
     fmt.Println("Init Done")
