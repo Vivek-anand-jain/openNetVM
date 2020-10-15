@@ -8,15 +8,10 @@ package main
 // #include <rte_mbuf.h>
 // #include <onvm_nflib.h>
 // #include <onvm_pkt_helper.h>
-// static inline struct udp_hdr*
-// get_pkt_udp_hdr(struct rte_mbuf* pkt) {
-//   uint8_t* pkt_data = rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr);
-//   return (struct udp_hdr*)pkt_data;
-// }
 import "C"
 import (
 	"fmt"
-    "time"
+  "time"
 )
 
 var done = make(chan bool, 1)
@@ -32,10 +27,9 @@ func Handler(pkt * C.struct_rte_mbuf, meta * C.struct_onvm_pkt_meta,
     fmt.Println("packet received!")
     meta.action = C.ONVM_NF_ACTION_DROP
 
-    // udp_hdr := C.onvm_pkt_udp_hdr(pk)
-    udp_hdr := C.get_pkt_udp_hdr(pkt);
+    udp_hdr := C.onvm_pkt_udp_hdr(pkt)
 
-    if udp_hdr.dst_port == 2125 {
+    if udp_hdr != nil && udp_hdr.dst_port == 2125 {
         pfcpHandler <- pkt
     } else {
         httpHandler <- pkt
@@ -90,8 +84,7 @@ func send_packet() {
     pmeta.destination = 100;
     pmeta.action = C.ONVM_NF_ACTION_TONF;
 
-    // The below line is not working
-    // C.onvm_nflib_return_pkt(nf_local_ctx.nf, pkt);
+    C.onvm_nflib_return_pkt(nf_local_ctx.nf, pkt);
 }
 
 //export Init
