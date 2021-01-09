@@ -429,7 +429,7 @@ make_packet_in(int xid, uint32_t buffer_id, char *buf, struct rte_mbuf *pkt) {
         pi->header.type = OFPT_PACKET_IN;
         pi->header.xid = htonl(xid);
         meta = onvm_get_pkt_meta(pkt);
-        pi->in_port = htons(meta->src);
+        pi->in_port = htons(meta->src.instance_id);
         pi->buffer_id = htonl(buffer_id);
         pi->reason = OFPR_NO_MATCH;
         pi->pad = 0;

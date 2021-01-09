@@ -110,7 +110,10 @@
 struct onvm_pkt_meta {
         uint8_t action;       /* Action to be performed */
         uint16_t destination; /* where to go next */
-        uint16_t src;         /* who processed the packet last */
+        struct {
+                uint16_t service_id;  /* last NF service id */
+                uint16_t instance_id; /* last NF instance id */
+        } src;         	      /* who processed the packet last */
         uint8_t chain_index;  /*index of the current step in the service chain*/
         uint8_t flags;        /* bits for custom NF data. Use with caution to prevent collisions from different NFs. */
 };

@@ -96,7 +96,8 @@ onvm_pkt_process_tx_batch(struct queue_mgr *tx_mgr, struct rte_mbuf *pkts[], uin
 
         for (i = 0; i < tx_count; i++) {
                 meta = (struct onvm_pkt_meta *)&(((struct rte_mbuf *)pkts[i])->udata64);
-                meta->src = nf->instance_id;
+                meta->src.service_id = nf->service_id;
+                meta->src.instance_id = nf->instance_id;
                 if (meta->action == ONVM_NF_ACTION_DROP) {
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
